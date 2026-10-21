@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { COURSE_BASE, courseMode, episodeVisible, FREE_TURNS_PER_DAY } from '../app/misses/course.ts'
+import { CHECKOUT_ENABLED, COURSE_BASE, courseMode, episodeVisible, FREE_TURNS_PER_DAY, TEACHER_TITLE } from '../app/misses/course.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const COURSE_DIR = join(ROOT, 'app', COURSE_BASE.slice(1))
@@ -58,10 +58,21 @@ test('unlisted: nothing outside the course links to it, there is no sitemap entr
   assert.match(readFileSync(join(COURSE_DIR, 'layout.tsx'), 'utf8'), /robots:\s*\{\s*index:\s*false/)
 })
 
-test('free: no checkout anywhere in the course or its API', () => {
+test('checkout is hard-disabled and no price appears anywhere in the course', () => {
+  assert.equal(CHECKOUT_ENABLED, false)
   for (const p of [...files(COURSE_DIR), ...files(API_DIR)]) {
-    assert.doesNotMatch(readFileSync(p, 'utf8'), /from\s+['"][^'"]*stripe|\/api\/stripe|\/pricing|\/redeem/i, relative(ROOT, p))
+    const text = readFileSync(p, 'utf8')
+    assert.doesNotMatch(text, /from\s+['"][^'"]*stripe|\/api\/stripe|\/pricing/i, relative(ROOT, p))
+    if (!p.endsWith('.png')) assert.doesNotMatch(text, /\$\s?\d/, `${relative(ROOT, p)} carries a price`)
   }
+})
+
+test('the teacher title lives in one place', () => {
+  assert.ok(TEACHER_TITLE)
+  const elsewhere = files(ROOT).filter(p => !p.includes('node_modules') && !p.includes('.next') && !p.includes('.git') && /\.(tsx?|json|mjs)$/.test(p))
+    .filter(p => !p.endsWith(join('misses', 'course.ts')) && readFileSync(p, 'utf8').includes(TEACHER_TITLE))
+    .map(p => relative(ROOT, p))
+  assert.deepEqual(elsewhere, [], 'TEACHER_TITLE is hard-coded outside course.ts')
 })
 
 test('free turns are capped from day one, at the chat’s number', () => {
@@ -80,10 +91,13 @@ test('every episode file is registered, and the data holds together', () => {
   const slugs = eps.map(e => e.slug)
   assert.equal(new Set(slugs).size, slugs.length, 'duplicate slugs')
   assert.equal(new Set(eps.map(e => e.number)).size, eps.length, 'duplicate episode numbers')
+  assert.ok(eps.some(e => e.access === 'free'), 'there is no free unit (D-117 §3a: free intro first)')
   for (const e of eps) {
     assert.match(e.slug, /^[a-z0-9-]+$/)
-    assert.ok(e.exhibits.length > 0 && e.naming && e.exercise.items.length > 0 && e.close, `${e.id} is missing a section`)
+    assert.ok(e.access === 'free' || e.access === 'paid', `${e.id}: access must be "free" or "paid"`)
     assert.ok('syndikos' in e.clearance && 'founder' in e.clearance, `${e.id} needs clearance.syndikos and clearance.founder`)
+    if (e.placeholder) continue
+    assert.ok(e.exhibits.length > 0 && e.naming && e.exercise.items.length > 0 && e.close, `${e.id} is missing a section`)
     const keys = e.exhibits.map(x => x.key)
     assert.equal(new Set(keys).size, keys.length, `${e.id}: duplicate exhibit keys`)
     for (const k of keys) assert.match(k, /^\w+$/, `${e.id}: exhibit key ${k} must match [SHOW_ARTIFACT:\\w+]`)

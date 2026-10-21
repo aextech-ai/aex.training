@@ -2,6 +2,7 @@
   "id": "e1",
   "slug": "wrong-question-or-wrong-number",
   "number": 1,
+  "access": "paid",
   "title": "Wrong question, or wrong number?",
   "summary": "Before you ask whether your number was right, check whether it answered the question being graded.",
   "clearance": {

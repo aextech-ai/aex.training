@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { FREE_TURNS_PER_DAY, courseMode } from '../../../misses/course'
 import { findEpisode } from '../../../misses/episodes'
-import { missesSystemPrompt } from '../../../misses/system-prompt'
+import { PERSONA_FALLBACK, missesSystemPrompt } from '../../../misses/system-prompt'
+import { hasPaidAccess } from '../../../misses/access'
 import { freeTurnsLeft, refundFreeTurn, takeFreeTurn, utcDay, visitorBucket } from '@/lib/db/free-turns'
 import { bannedIn } from '@/lib/vocabulary.mjs'
 
 // The persona for "Barry's Greatest Misses". Unlike /api/chat, the client sends only the episode
 // slug and the conversation: the system prompt, the model and the token budget are set here, and
-// every turn is counted against the free daily cap before the model is called. Free, no checkout.
+// every turn is counted against the free daily cap before the model is called. No checkout here:
+// paid episodes need an enrollment (D-117 §3a), and the cap holds for everyone until a price is struck.
 
 const COURSE = 'misses'
 const MODEL = 'claude-sonnet-4-20250514'
 const MAX_TOKENS = 700
 const MAX_MESSAGES = 16
 const MAX_CHARS = 2000
-const FALLBACK = "Let's stay with the question in front of us. Which word or fact in it decides the answer?"
 
 function clientIp(req: NextRequest): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
@@ -24,14 +25,19 @@ function salt(): string | null {
   return process.env.MISSES_TURN_SALT || process.env.NEXTAUTH_SECRET || null
 }
 
-function episodeFor(slug: unknown) {
-  if (courseMode() === 'off' || typeof slug !== 'string') return null
-  const ep = findEpisode(slug)
-  return ep?.persona?.enabled ? ep : null
+// A paid episode's teacher answers enrolled learners only, as its page does. Preview deploys skip
+// the enrollment check so reviewers can try it; the free-turn cap still applies there.
+async function episodeFor(slug: unknown) {
+  const mode = courseMode()
+  if (mode === 'off' || typeof slug !== 'string') return null
+  const ep = findEpisode(slug, mode)
+  if (!ep?.persona?.enabled) return null
+  if (ep.access === 'paid' && mode !== 'preview' && !(await hasPaidAccess())) return null
+  return ep
 }
 
 export async function GET(req: NextRequest) {
-  const ep = episodeFor(req.nextUrl.searchParams.get('episode'))
+  const ep = await episodeFor(req.nextUrl.searchParams.get('episode'))
   if (!ep) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const s = salt()
   if (!s) return NextResponse.json({ error: 'Unavailable' }, { status: 503 })
@@ -46,7 +52,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
-  const ep = episodeFor(body?.episode)
+  const ep = await episodeFor(body?.episode)
   if (!ep) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const messages = Array.isArray(body?.messages) ? body.messages.slice(-MAX_MESSAGES) : []
@@ -83,7 +89,7 @@ export async function POST(req: NextRequest) {
     if (hits.length) {
       reply = await complete(apiKey, `${system}\n\nYour last draft used words this course does not use (${hits.join(', ')}). Write the reply again without them.`, messages)
       hits = bannedIn(reply)
-      if (hits.length) reply = FALLBACK
+      if (hits.length) reply = PERSONA_FALLBACK
     }
     return NextResponse.json({ reply, remaining_turns: remaining })
   } catch {

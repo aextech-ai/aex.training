@@ -29,6 +29,16 @@ function* strings(node, path, inQuote) {
   }
 }
 
+test("the teacher's copy uses none of the D-58 words", () => {
+  const teacher = JSON.parse(readFileSync(join(DIR, '..', 'teacher.json'), 'utf8'))
+  const hits = []
+  for (const s of strings(teacher, 'teacher', false)) {
+    const h = bannedIn(s.text)
+    if (h.length) hits.push(`${s.path}: ${h.join(', ')}`)
+  }
+  assert.deepEqual(hits, [], `D-58 words in teacher.json:\n${hits.join('\n')}`)
+})
+
 test('there is at least one episode file', () => {
   assert.ok(episodes.length > 0)
 })

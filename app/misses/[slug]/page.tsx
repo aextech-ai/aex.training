@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
-import { COURSE_BASE, COURSE_TITLE, PERSONA_NAME, courseMode, isCleared } from '../course'
+import { COURSE_BASE, COURSE_TITLE, TEACHER_SHORT, courseMode, isCleared } from '../course'
+import { hasPaidAccess } from '../access'
+import PaidGate from '../PaidGate'
 import { findEpisode } from '../episodes'
 import Inline from '../Inline'
 import PreviewBanner from '../PreviewBanner'
@@ -12,11 +14,27 @@ export const dynamic = 'force-dynamic'
 
 const BARRY_ARTICLE = 'https://diddja.com/a/'
 
-export default function EpisodePage({ params }: { params: { slug: string } }) {
+export default async function EpisodePage({ params, searchParams }: { params: { slug: string }; searchParams: { preview?: string } }) {
   const mode = courseMode()
   if (mode === 'off') notFound()
   const ep = findEpisode(params.slug, mode)
   if (!ep) notFound()
+
+  // Paid lessons open to enrolled learners only. In preview mode a reviewer can read past the gate.
+  const href = `${COURSE_BASE}/${ep.slug}`
+  const reviewing = mode === 'preview' && searchParams.preview === '1'
+  const locked = ep.access === 'paid' && !reviewing && !(await hasPaidAccess())
+  if (locked) {
+    return (
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px 80px' }}>
+        {mode === 'preview' && <PreviewBanner />}
+        <a href={COURSE_BASE} style={{ fontSize: 13, color: '#8a8f98', textDecoration: 'none' }}>← {COURSE_TITLE}</a>
+        <EpisodeHeading number={ep.number} title={ep.title} draft={!isCleared(ep.clearance)} />
+        <p style={para}><Inline text={ep.summary} /></p>
+        <PaidGate next={href} previewHref={mode === 'preview' ? `${href}?preview=1` : undefined} />
+      </main>
+    )
+  }
 
   // The persona's exhibit panel reuses the shared ExhibitPanel, so the exhibits go over in its shape.
   const exhibitData: Record<string, Exhibit> = Object.fromEntries(ep.exhibits.map(x => [x.key, {
@@ -30,10 +48,7 @@ export default function EpisodePage({ params }: { params: { slug: string } }) {
       {mode === 'preview' && <PreviewBanner />}
       <a href={COURSE_BASE} style={{ fontSize: 13, color: '#8a8f98', textDecoration: 'none' }}>← {COURSE_TITLE}</a>
 
-      <div style={{ fontSize: 12, fontWeight: 600, color: '#c97d3c', letterSpacing: '0.06em', margin: '24px 0 6px' }}>
-        EPISODE {ep.number}{!isCleared(ep.clearance) && <span style={{ color: '#e0a06a', fontWeight: 500, marginLeft: 10 }}>draft · not cleared</span>}
-      </div>
-      <h1 style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 600, color: '#e0e3ea', margin: '0 0 20px' }}>{ep.title}</h1>
+      <EpisodeHeading number={ep.number} title={ep.title} draft={!isCleared(ep.clearance)} />
 
       <section style={prose}>
         {ep.intro.map((p, i) => <p key={i} style={para}><Inline text={p} /></p>)}
@@ -84,7 +99,7 @@ export default function EpisodePage({ params }: { params: { slug: string } }) {
           {ep.exercise.note && <p style={{ ...para, fontSize: 13, color: '#6b7280' }}><em>{ep.exercise.note}</em></p>}
         </div>
         {ep.persona?.enabled && (
-          <EpisodeTutor slug={ep.slug} personaName={PERSONA_NAME} opener={personaOpener(ep)} exhibitData={exhibitData} />
+          <EpisodeTutor slug={ep.slug} personaName={TEACHER_SHORT} opener={personaOpener(ep)} exhibitData={exhibitData} />
         )}
       </section>
 
@@ -92,6 +107,17 @@ export default function EpisodePage({ params }: { params: { slug: string } }) {
         <p style={{ margin: 0 }}><em>{ep.close}</em></p>
       </footer>
     </main>
+  )
+}
+
+function EpisodeHeading({ number, title, draft }: { number: number; title: string; draft: boolean }) {
+  return (
+    <>
+      <div style={{ fontSize: 12, fontWeight: 600, color: '#c97d3c', letterSpacing: '0.06em', margin: '24px 0 6px' }}>
+        EPISODE {number}{draft && <span style={{ color: '#e0a06a', fontWeight: 500, marginLeft: 10 }}>draft · not cleared</span>}
+      </div>
+      <h1 style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 600, color: '#e0e3ea', margin: '0 0 20px' }}>{title}</h1>
+    </>
   )
 }
 

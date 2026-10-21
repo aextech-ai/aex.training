@@ -9,8 +9,17 @@ export const COURSE_BASE = '/misses'
 export const COURSE_TITLE = "Barry's Greatest Misses"
 export const COURSE_TAGLINE = 'A forecasting course built from one analyst’s published misses, in his own words.'
 
-// Working name for the teacher persona. Ook owns persona names.
-export const PERSONA_NAME = 'Clio'
+// The teacher (D-117 §3b, Office #866): Barry teaches. Ook rules the title, and Syndikos checks it
+// implies no real academic credential, so it lives here and nowhere else.
+export const TEACHER_TITLE = 'Assistant Professor Barry Diddja'
+export const TEACHER_SHORT = 'Barry'
+
+// The paid pack (D-117 §3a): one free unit, then a pack, on the Ariadne → Joan model. Access is
+// the `access` field of each episode file. Enrollment is the enrollments row for this course id,
+// as for Joan. Checkout stays off until Emporion proposes a price and the founder ratifies it
+// (D-62); there is deliberately no price anywhere in the course.
+export const COURSE_ID = 'misses'
+export const CHECKOUT_ENABLED = false as const
 
 // Free persona turns per visitor per UTC day. The number matches the Barry chat's free tier
 // (FREE_TURNS = 3 in BarryDiddja edge/chat/chat-worker.js); note that the chat's 3 are per browser
@@ -39,6 +48,8 @@ export interface Clearance {
 export function isCleared(c: Clearance): boolean {
   return !!c.syndikos
 }
+
+export type Access = 'free' | 'paid'
 
 export function episodeVisible(c: Clearance, mode: CourseMode): boolean {
   if (mode === 'off') return false

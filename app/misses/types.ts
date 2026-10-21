@@ -1,4 +1,4 @@
-import type { Clearance } from './course'
+import type { Access, Clearance } from './course'
 
 // The shape of an episode data file (app/misses/episodes/*.json). Text fields accept three inline
 // marks: **strong**, *em* and `code`. Nothing else is interpreted.
@@ -27,13 +27,20 @@ export interface VocabularyException {
   cleared: boolean
 }
 
-export interface Episode {
+// What the episode list needs. A placeholder file has only this: it shows in the list as
+// "coming" and has no page.
+export interface EpisodeListing {
   id: string
   slug: string
   number: number
   title: string
   summary: string
+  access: Access
+  placeholder?: boolean
   clearance: Clearance & { note?: string }
+}
+
+export interface Episode extends EpisodeListing {
   source: { draft: string; archive: string }
   intro: string[]
   exhibits: EpisodeExhibit[]
