@@ -53,3 +53,13 @@ CREATE TABLE IF NOT EXISTS purchases (
   aex_id            INTEGER REFERENCES users(aex_id),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Free persona turns, per visitor per UTC day (Barry's Greatest Misses; lib/db/free-turns.ts).
+-- bucket is sha256(salt|day|ip): no IP is stored. Rows older than a few days can be deleted.
+CREATE TABLE IF NOT EXISTS free_turns (
+  course  TEXT NOT NULL,
+  bucket  TEXT NOT NULL,
+  day     DATE NOT NULL,
+  turns   INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (course, bucket, day)
+);
