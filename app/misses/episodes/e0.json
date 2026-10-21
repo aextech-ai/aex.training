@@ -1,0 +1,14 @@
+{
+  "id": "e0",
+  "slug": "free-intro",
+  "number": 0,
+  "access": "free",
+  "placeholder": true,
+  "title": "Keeping your agent's data honest",
+  "summary": "The free intro unit. Not written yet: a working title from the founder's suggestion (D-117 \u00a73a).",
+  "clearance": {
+    "syndikos": null,
+    "founder": null,
+    "note": "Placeholder slot for the free intro (Office #866). No content."
+  }
+}
