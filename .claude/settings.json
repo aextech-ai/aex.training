@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude-code-remote__add_repo",
+      "mcp__claude-code-remote__register_repo_root",
+      "Bash(printenv AEX_SEAT)",
+      "Bash(printenv AEX_SEAT PONDER_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT KEEL_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT ARCHON_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT METRONOMOS_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT THESMOTHETES_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT OOK_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT LOGOTHETES_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT EMPORION_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT RIGGING_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT RICH_PURNELL_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT SYNDIKOS_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT BARRY_CLOUD_AGENT_ID)",
+      "Bash(printenv AEX_SEAT KOROIBOS_CLOUD_AGENT_ID)",
+      "Bash(node commons/board-dispatch.mjs comment *)",
+      "Bash(node /home/user/Office/commons/board-dispatch.mjs comment *)"
+    ]
+  }
+}
