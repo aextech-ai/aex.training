@@ -17,7 +17,6 @@
       "Bash(printenv AEX_SEAT SYNDIKOS_CLOUD_AGENT_ID)",
       "Bash(printenv AEX_SEAT BARRY_CLOUD_AGENT_ID)",
       "Bash(printenv AEX_SEAT KOROIBOS_CLOUD_AGENT_ID)",
-      "Bash(node commons/board-dispatch.mjs comment *)",
       "Bash(node /home/user/Office/commons/board-dispatch.mjs comment *)"
     ]
   }
